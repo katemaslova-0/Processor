@@ -1,24 +1,24 @@
 #ifndef STACK_H
 #define STACK_H
 
-typedef int StackEl;
+typedef char* StackEl;
 
 struct Stack_t
 {
     StackEl * data;
-    StackEl size;
+    StackEl size; // int
     int capacity;
 };
 
 enum StackErr_t
 {
-    NoError        =  1,
-    StackPushLimit = (2 << 0),
-    StackPopLimit  = (2 << 1),
-    BadCapacity    = (2 << 2),
-    NullStackPtr   = (2 << 3),
-    NullDataPtr    = (2 << 4),
-    ERROR          = (2 << 5)
+    NoError        = (1 << 0),
+    StackPushLimit = (1 << 1),
+    StackPopLimit  = (1 << 2),
+    BadCapacity    = (1 << 3),
+    NullStackPtr   = (1 << 4),
+    NullDataPtr    = (1 << 5),
+    ERROR          = (1 << 6)
 };
 
 #endif // STACK_H

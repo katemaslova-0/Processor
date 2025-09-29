@@ -5,18 +5,22 @@
 #include "Stack.h"
 #include "StackFunc.h"
 
-#define STACK_OK(stk) if (StackErr(stk) != NoError) {printf("\nStackDump() at %s:%d\n", __FILE__, __LINE__); StackDump(stk, StackErr(stk)); return ERROR;}
+#define STACK_OK(stk) if (StackErr(stk) != NoError) { \
+        printf("\nStackDump() at %s:%d\n", __FILE__, __LINE__); \
+        StackDump(stk, StackErr(stk)); return ERROR;
+        }
 #define MY_ASSERT(cond, cond2) if (!(cond)) {fprintf(stderr, "%s\nError in file %s in line %d\n", cond2, __FILE__, __LINE__); return ERROR;}
 
 const StackEl POISON = 333;
-const int CANARY_VALUE = 666;
+const uint64_t CANARY_VALUE = 0xDEDOBEDAED;
 
 StackErr_t StackCtor (Stack_t * stk, int capacity)
 {
     MY_ASSERT(capacity > 0, "Некорректное значение размера массива");
     MY_ASSERT(stk != NULL, "Нулевой указатель на структуру");
 
-    stk->data = (StackEl *) calloc ((size_t)capacity + 2, sizeof(StackEl));
+    stk->data = (StackEl *) calloc ((size_t) capacity + 2, sizeof( StackEl));
+    MY_ASSERT(stk->data != NULL, "Ошибка выделения памяти");
 
     //SetCanaryProtection(stk);
 
@@ -66,6 +70,8 @@ StackErr_t StackPush (Stack_t * stk, StackEl value)
 
 StackErr_t StackPop (Stack_t * stk, StackEl * value)
 {
+    assert(value);
+
     STACK_OK(stk);
 
     if (stk->size <= 0)
@@ -85,19 +91,22 @@ StackErr_t StackPop (Stack_t * stk, StackEl * value)
 
 int StackDtor (Stack_t * stk)
 {
+    MY_ASSERT(stk != NULL, "Нулевой указатель на структуру");
+
     free(stk->data);
     return 0;
 }
 
 
-int StackDump (Stack_t * stk, int sum_of_err)
+void StackDump (Stack_t * stk, int sum_of_err)
 {
-    if (stk == NULL)
+    if (stk == NULL) {
         printf("Stack [NULL POINTER!]\n");
-    else
-    {
-        printf("Stack [%p]\n", stk);
-        printf("{\n     size = %d\n     capacity = %d\n", stk->size, stk->capacity);
+        return;
+    }
+
+    printf("Stack [%p]\n", stk); // отступы
+    printf("{\n     size = %d\n     capacity = %d\n", stk->size, stk->capacity);
         if (stk->data != NULL)
         {
             printf("data[%p]\n", stk->data);
@@ -117,18 +126,18 @@ int StackDump (Stack_t * stk, int sum_of_err)
             }
             printf("     }\n");
         }
-    }
 
-    if (sum_of_err & StackPushLimit)
-        printf("     Код ошибки: %d\n", StackPushLimit);
-    if (sum_of_err & StackPopLimit)
-        printf("     Код ошибки: %d\n", StackPopLimit);
-    if (sum_of_err & BadCapacity)
-        printf("     Код ошибки: %d\n", BadCapacity);
-    if (sum_of_err & NullStackPtr)
-        printf("     Код ошибки: %d\n", NullStackPtr);
-    if (sum_of_err & NullDataPtr)
-        printf("     Код ошибки: %d\n", NullDataPtr);
+
+    // if (sum_of_err & StackPushLimit)
+    //     printf("     Код ошибки: %d\n", StackPushLimit);
+    // if (sum_of_err & StackPopLimit)
+    //     printf("     Код ошибки: %d\n", StackPopLimit);
+    // if (sum_of_err & BadCapacity)
+    //     printf("     Код ошибки: %d\n", BadCapacity);
+    // if (sum_of_err & NullStackPtr)
+    //     printf("     Код ошибки: %d\n", NullStackPtr);
+    // if (sum_of_err & NullDataPtr)
+    //     printf("     Код ошибки: %d\n", NullDataPtr);
 
     printf("}\n");
 
@@ -142,26 +151,27 @@ int StackErr (Stack_t * stk)
 
     if (stk == NULL)
     {
-        sum_of_err += NullStackPtr;
+        sum_of_err |= NullStackPtr;
     }
     else
     {
         if (stk->data == NULL)
         {
-            sum_of_err += NullDataPtr;
+            sum_of_err |= NullDataPtr;
         }
         if (stk->capacity <= 0)
         {
-            sum_of_err += BadCapacity;
+            sum_of_err |= BadCapacity;
         }
         if (stk->size > stk->capacity)
         {
-            sum_of_err += StackPushLimit;
+            sum_of_err |= StackPushLimit;
         }
-        if (stk->size < 0)
+        if (stk->size < 0) // поменять на 1
         {
-            sum_of_err += StackPopLimit;
+            sum_of_err |= StackPopLimit;
         }
+        if (stk->data[0] != ) // NULL?
     }
     return sum_of_err;
 }

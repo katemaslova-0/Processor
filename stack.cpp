@@ -5,9 +5,10 @@
 #include "Stack.h"
 #include "StackFunc.h"
 
-#define StackCtor(stk, capacity) if (StackCtor(stk, capacity) != NoError) {return -1;}
-#define StackPush(stk, value) if (StackPush(stk, value) != NoError) {return -1;}
+#define StackCtor(stk, capacity) if (StackCtor(stk, capacity) != NoError) {StackDtor(stk); return -1;}
+#define StackPush(stk, value) if (StackPush(stk, value) != NoError) {return -1;} // вынести в хедер
 #define StackPop(stk, value) if (StackPop(stk, value) != NoError) {return -1;}
+#define CHECK_RET_VAL(func, ) if (func != NoError) {StackDtor(stk)return -1;}
 
 int main (void)
 {
@@ -15,8 +16,12 @@ int main (void)
     int x = 0, y = 0, z = 0, c = 0;
 
     StackCtor(&stk1, 5);
+
     StackPush(&stk1, 10);
-    StackPush(&stk1, 20);
+    if (StackPush(&stk1, 20) != NoError) {
+        StackDtor(&stk);
+        return -1;
+    }
     StackPush(&stk1, 30);
     StackPush(&stk1, 40);
     StackPush(&stk1, 50);
