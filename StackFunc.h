@@ -50,6 +50,6 @@ int StackDump (Stack_t * stk);
 void SetCanaryProtection(Stack_t * stk);
 void Calc(FILE * fp, Stack_t * stk);
 void OutputErrorCode(int sum_of_err);
-//void StackRealloc(Stack_t * stk);
+StackErr_t StackRealloc(Stack_t * stk);
 
 #endif // STACKFUNC_H

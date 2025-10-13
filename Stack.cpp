@@ -46,9 +46,8 @@ StackErr_t StackPush (Stack_t * stk, StackEl value)
 
     if (stk->size > stk->capacity)
     {
-        //StackRealloc(stk);
-        printf("Стек заполнен. Не удалось выполнить push.\n");
-        return NoError;
+        if (StackRealloc(stk) != NoError)
+            return ERROR;
     }
 
     stk->data[stk->size] = value;
@@ -60,24 +59,24 @@ StackErr_t StackPush (Stack_t * stk, StackEl value)
 }
 
 
-/*void StackRealloc(Stack_t * stk)
+StackErr_t StackRealloc(Stack_t * stk)
 {
     assert(stk);
 
-    printf("Size: %d", stk->size);
-
-    *(stk->data + stk->capacity + 1) = POISON;
-    stk->data = (StackEl *) realloc (stk->data, (size_t)(stk->capacity * 2 + 2));
-
+    int old_capacity = stk->capacity;
     stk->capacity *= 2;
-    printf("New capacity: %d", stk->capacity);
-    printf("Size: %d", stk->size);
-    printf("stk->data[stk->size]: %d\n", stk->data[stk->size - 3]);
+    stk->data = (StackEl *) realloc (stk->data, (size_t)(stk->capacity + 2) * sizeof(StackEl));
 
-    //SetCanaryProtection(stk);
+    for (int count = old_capacity + 1; count < stk->capacity + 1; count++)
+        *(stk->data + count) = POISON;
 
-    assert(stk->data);
-}*/
+    SetCanaryProtection(stk);
+
+    if (stk->data == NULL)
+        return ERROR;
+
+    return NoError;
+}
 
 
 StackErr_t StackPop (Stack_t * stk, StackEl * value)
@@ -144,6 +143,7 @@ int StackDump (Stack_t * stk)
         }
         printf("     }\n");
     }
+    printf("}\n");
 
     return 0;
 }

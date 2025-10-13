@@ -11,7 +11,7 @@ void FillPointBuff (char * buffer, int num_of_lines, char ** text); // запо�
 void OutputToFile (int * code, const char * output_filename, int num_of_el); // выводит строки из буфера указателей в файл
 void InitData(int * size_of_buffer, char ** buffer); // инициализация буфера с текстовыми командами
 StackErr_t TranslateCommands(int ** code, int * pos, char *** textcode, int num_of_lines, int * labels); // перевод текстовых комманд в байт-код
-StackErr_t CompileTwice(int ** code, int * pos, char *** textcode, int num_of_lines, int * labels); 
+StackErr_t CompileTwice(int ** code, int * pos, char *** textcode, int num_of_lines, int * labels); // дважды запускает перевод текстовых команд в байт-код
 void CleanAll (char ** buffer, char *** textcode, int ** code); // очистка буферов
 
 #endif // TRANSLATEFUNC_H
