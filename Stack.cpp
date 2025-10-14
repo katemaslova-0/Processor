@@ -7,6 +7,14 @@
 #include "Data.h"
 #include "StackFunc.h"
 
+#define STACK_OK(stk) if (StackErr(stk) != NoError) { \
+        printf("\nStackDump() at %s:%d\n", __FILE__, __LINE__); \
+        int result = StackErr(stk); \
+        StackDump(stk); \
+        OutputErrorCode(result); \
+        return ERROR; \
+        }
+
 StackErr_t StackCtor (Stack_t * stk, int capacity)
 {
     MY_ASSERT(capacity > 0, "Некорректное значение размера массива");

@@ -15,7 +15,6 @@ int main (void)
     
     if (ReadFileToCode(filename, &code, &size_of_code) != NoProcError) // считывание файла в буфер
     {
-        //
         return -1;
     }
 
@@ -25,7 +24,7 @@ int main (void)
         ProcDtor(&proc1);
         return -1;
     }
-    if (Calc(&proc1, size_of_code) != NoProcError) // выполнение команд
+    if (Calc(&proc1) != NoProcError) // выполнение команд
     {
         ProcDtor(&proc1);
         return -1;

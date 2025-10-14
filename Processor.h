@@ -6,13 +6,17 @@
 #include "SPUFunc.h"
 
 const int NUM_OF_REGS = 4;
+const int SIZE_OF_RAM = 100;
 
 struct SPU_t
 {
     Stack_t stk;
+    Stack_t stk_return;
     int * code;
+    int size_of_code;
     int cmd_count;
     int reg[NUM_OF_REGS];
+    int RAM[SIZE_OF_RAM];
 };
 
 enum RegName

@@ -14,13 +14,11 @@ int main (void)
     int size_of_buffer = 0;
     char * buffer = NULL;
     int labels[NUM_OF_LABELS] = {};
-    const char * filename = "calc.txt";
+    const char * filename = "testcall.txt";
     const char * output_filename = "translator_out.txt";
     
     InitData(&size_of_buffer, &buffer); // инициализация буфера с текстовыми командами
-
     ReadFile (buffer, &num_of_lines, filename, size_of_buffer); // считывание файла в буфер
-
     char ** textcode = (char **) calloc((size_t)num_of_lines, sizeof(char *)); // заполнение массива указателей
     assert(textcode);
     FillPointBuff(buffer, num_of_lines, textcode); // return

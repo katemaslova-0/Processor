@@ -30,16 +30,6 @@ enum StackErr_t
 #define VerifyStackCtor(stk, capacity) if (StackCtor(stk, capacity) != NoError) {StackDtor(stk); return PROC_ERROR;}
 #define VerifyStackPush(stk, value) if (StackPush(stk, value) != NoError) {StackDtor(stk); return PROC_ERROR;}
 #define VerifyStackPop(stk, value) if (StackPop(stk, value) != NoError) {StackDtor(stk); return PROC_ERROR;}
-//#define StackPop(stk, value) CHECK_RET_VAL(StackPop(stk, &value), stk); 
-//#define CHECK_RET_VAL(func, stk) if (func != NoError) {StackDtor(stk); return -1;}
-
-#define STACK_OK(stk) if (StackErr(stk) != NoError) { \
-        printf("\nStackDump() at %s:%d\n", __FILE__, __LINE__); \
-        int result = StackErr(stk); \
-        StackDump(stk); \
-        OutputErrorCode(result); \
-        return ERROR; \
-        }
 
 StackErr_t StackCtor(Stack_t * stk, int capacity);
 StackErr_t StackPush(Stack_t * stk, StackEl value);

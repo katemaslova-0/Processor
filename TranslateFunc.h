@@ -1,8 +1,6 @@
 #ifndef TRANSLATEFUNC_H
 #define TRANSLATEFUNC_H
 
-const int SIZE_OF_CMD_STR = 40;
-
 int CountLines (char * buffer); // считает количество строк
 void ReadFile (char * buffer, int * num_of_lines, const char * filename, int size_of_buffer); // считывание файла в буфер
 void ReworkBuffer (char * buffer, char sym_to_find, char sym_to_put_instead, int size_of_buffer); /* замена в буфере всех символов

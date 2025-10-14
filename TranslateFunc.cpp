@@ -7,13 +7,15 @@
 #include "Data.h"
 #include "TranslateFunc.h"
 
+const int SIZE_OF_CMD_STR = 40;
+
 #define TRANSLATOR_ERROR {printf("Error at %s:%d\n", __FILE__, __LINE__); return ERROR;}
 
 void ReadFile (char * buffer, int * num_of_lines, const char * filename, int size_of_buffer)
 {
-    assert(buffer != NULL);
-    assert(num_of_lines != NULL);
-    assert(filename != NULL);
+    assert(buffer);
+    assert(num_of_lines);
+    assert(filename);
 
     FILE * fp = fopen(filename, "r");
 
@@ -29,8 +31,8 @@ void ReadFile (char * buffer, int * num_of_lines, const char * filename, int siz
 
 void FillPointBuff (char * buffer, int num_of_lines, char ** text)
 {
-    assert(buffer != NULL);
-    assert(text != NULL);
+    assert(buffer);
+    assert(text);
 
     int count = 0;
     char * ptr_buffer = buffer;
@@ -50,7 +52,7 @@ void FillPointBuff (char * buffer, int num_of_lines, char ** text)
 
 void ReworkBuffer (char * buffer, char sym_to_find, char sym_to_put_instead, int size_of_buffer)
 {
-    assert(buffer != NULL);
+    assert(buffer);
 
     int count = 0;
     while (count < size_of_buffer - 1)
@@ -68,7 +70,7 @@ void ReworkBuffer (char * buffer, char sym_to_find, char sym_to_put_instead, int
 
 int CountLines (char * buffer)
 {
-    assert(buffer != NULL);
+    assert(buffer);
 
     int num_of_lines = 0;
     int count = 0;
@@ -87,8 +89,8 @@ int CountLines (char * buffer)
 
 void OutputToFile (int * code, const char * output_filename, int num_of_el)
 {  
-    assert(code != NULL);
-    assert(output_filename != NULL);
+    assert(code);
+    assert(output_filename);
 
     FILE * fp_out = fopen(output_filename, "w");
 
@@ -117,12 +119,17 @@ void InitData(int * size_of_buffer, char ** buffer)
 
 StackErr_t CompileTwice(int ** code, int * pos, char *** textcode, int num_of_lines, int * labels)
 {
-    if (TranslateCommands(code, pos, textcode, num_of_lines, labels) != NoError) // перевод текстовых команд в байт-код(1)
+    assert(code);
+    assert(pos);
+    assert(textcode);
+    assert(labels);
+
+    if (TranslateCommands(code, pos, textcode, num_of_lines, labels) != NoError)
     {
         return ERROR;
     }
     *pos = 0;
-    if (TranslateCommands(code, pos, textcode, num_of_lines, labels) != NoError) // перевод текстовых команд в байт-код(2)
+    if (TranslateCommands(code, pos, textcode, num_of_lines, labels) != NoError)
     {
         return ERROR;
     }
@@ -136,6 +143,7 @@ StackErr_t TranslateCommands(int ** code, int * pos, char *** textcode, int num_
     assert(code);
     assert(pos);
     assert(textcode);
+    assert(labels);
 
     int textcode_pos = 0;
 
@@ -217,23 +225,23 @@ StackErr_t TranslateCommands(int ** code, int * pos, char *** textcode, int num_
         else if (strcmp(cmdStr, "JBE") == 0)
         {
             (*code)[(*pos)++] = JBE;
-            int arg = 0;
-            sscanf((*textcode)[textcode_pos++], "JBE :%d", &arg);
-            (*code)[(*pos)++] = arg;
+            int num_of_label = 0;
+            sscanf((*textcode)[textcode_pos++], "JBE :%d", &num_of_label);
+            (*code)[(*pos)++] = labels[num_of_label];
         }
         else if (strcmp(cmdStr, "JA") == 0)
         {
             (*code)[(*pos)++] = JA;
-            int arg = 0;
-            sscanf((*textcode)[textcode_pos++], "JA :%d", &arg);
-            (*code)[(*pos)++] = arg;
+            int num_of_label = 0;
+            sscanf((*textcode)[textcode_pos++], "JA :%d", &num_of_label);
+            (*code)[(*pos)++] = labels[num_of_label];
         }
         else if (strcmp(cmdStr, "JAE") == 0)
         {
             (*code)[(*pos)++] = JAE;
-            int arg = 0;
-            sscanf((*textcode)[textcode_pos++], "JAE :%d", &arg);
-            (*code)[(*pos)++] = arg;
+            int num_of_label = 0;
+            sscanf((*textcode)[textcode_pos++], "JAE :%d", &num_of_label);
+            (*code)[(*pos)++] = labels[num_of_label];
         }
         else if (strcmp(cmdStr, "JE") == 0)
         {
@@ -245,14 +253,40 @@ StackErr_t TranslateCommands(int ** code, int * pos, char *** textcode, int num_
         else if (strcmp(cmdStr, "JNE") == 0)
         {
             (*code)[(*pos)++] = JNE;
-            int arg = 0;
-            sscanf((*textcode)[textcode_pos++], "JNE :%d", &arg);
-            (*code)[(*pos)++] = arg;
+            int num_of_label = 0;
+            sscanf((*textcode)[textcode_pos++], "JNE :%d", &num_of_label);
+            (*code)[(*pos)++] = labels[num_of_label];
+        }
+        else if (strcmp(cmdStr, "CALL") == 0)
+        {
+            (*code)[(*pos)++] = CALL;
+            int num_of_label = 0;
+            sscanf((*textcode)[textcode_pos++], "CALL :%d", &num_of_label);
+            (*code)[(*pos)++] = labels[num_of_label];
+        }
+        else if (strcmp(cmdStr, "RET") == 0)
+        {
+            (*code)[(*pos)++] = RET;
+            textcode_pos++;
         }
         else if (strcmp(cmdStr, "HLT") == 0)
         {
             (*code)[(*pos)++] = HLT;
             textcode_pos++;
+        }
+        else if (strcmp(cmdStr, "PUSHM") == 0)
+        {
+            (*code)[(*pos)++] = PUSHM;
+            char arg = '\0';
+            sscanf((*textcode)[textcode_pos++], "PUSHM [%c", &arg);
+            (*code)[(*pos)++] = (int)arg;
+        }
+        else if (strcmp(cmdStr, "POPM") == 0)
+        {
+            (*code)[(*pos)++] = POPM;
+            char arg = '\0';
+            sscanf((*textcode)[textcode_pos++], "POPM [%c", &arg);
+            (*code)[(*pos)++] = (int)arg;
         }
         else if (strchr(cmdStr, ':') != NULL)
         {

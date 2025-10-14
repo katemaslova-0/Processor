@@ -25,7 +25,11 @@ enum CmdNum
     JE      = 15,
     JNE     = 16,
     SQRT    = 17,
-    IN      = 18
+    IN      = 18,
+    CALL    = 19,
+    RET     = 20,
+    PUSHM   = 21,
+    POPM    = 22
 };
 
 #endif // DATA_H
