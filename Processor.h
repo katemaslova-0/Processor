@@ -30,7 +30,7 @@ enum RegName
 enum ProcErr_t
 {
     NoProcError       = (1 << 0),
-    PROC_ERROR        = (1 << 1),
+    ProcError         = (1 << 1),
     NullProcPtr       = (1 << 2),
     CodeArrayOverflow = (1 << 3),
     InvalidCount      = (1 << 4),

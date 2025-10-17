@@ -7,6 +7,8 @@
 #include "TranslateFunc.h"
 
 const int NUM_OF_LABELS = 10;
+const char * filename = "factorial.txt";
+const char * output_filename = "translator_out.txt";
 
 int main (void)
 {
@@ -14,27 +16,34 @@ int main (void)
     int size_of_buffer = 0;
     char * buffer = NULL;
     int labels[NUM_OF_LABELS] = {};
-    const char * filename = "testcall.txt";
-    const char * output_filename = "translator_out.txt";
+    int * code = NULL;
+    char ** textcode = NULL;
+    Cmd_t * commands_buf = NULL;
     
-    InitData(&size_of_buffer, &buffer); // инициализация буфера с текстовыми командами
+    InitData(&size_of_buffer, &buffer, filename); // инициализация буфера с текстовыми командами
     ReadFile (buffer, &num_of_lines, filename, size_of_buffer); // считывание файла в буфер
-    char ** textcode = (char **) calloc((size_t)num_of_lines, sizeof(char *)); // заполнение массива указателей
-    assert(textcode);
-    FillPointBuff(buffer, num_of_lines, textcode); // return
 
-    int * code = (int *) calloc ((size_t)(num_of_lines * 2), sizeof(int)); // инициализация массива с байт-кодом
-    assert(code);
-    int pos = 0; // инициализация счётчика количества элементов
-
-    if (CompileTwice(&code, &pos, &textcode, num_of_lines, labels) != NoError)
+    if (FillStructBuff(&commands_buf) != NoTranslError) // заполнение массива структур с данными о командах
     {
-        CleanAll(&buffer, &textcode, &code);
+        CleanAll(&buffer, &textcode, &code, &commands_buf);
+        return -1;
+    }
+
+    if (FillPointBuff(buffer, num_of_lines, &textcode) != NoTranslError) // заполнение массива указателей на строки
+    {
+        CleanAll(&buffer, &textcode, &code, &commands_buf);
+        return -1;
+    }
+
+    int pos = 0; // инициализация счётчика количества элементов
+    if (CompileTwice(&code, &pos, &textcode, num_of_lines, labels, commands_buf) != NoTranslError)
+    {
+        CleanAll(&buffer, &textcode, &code, &commands_buf);
         return -1;
     }
 
     OutputToFile (code, output_filename, pos); // запись байт-кода в файл
-    CleanAll(&buffer, &textcode, &code); // очистка буферов
+    CleanAll(&buffer, &textcode, &code, &commands_buf); // очистка буферов
 
     return 0;
 }

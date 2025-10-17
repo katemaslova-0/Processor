@@ -1,35 +1,31 @@
 #ifndef DATA_H
 #define DATA_H
 
-#include "SPUFunc.h"
-#include "Processor.h"
-
-#define MY_ASSERT(cond, cond2) if (!(cond)) {fprintf(stderr, "%s\nError in file %s in line %d\n", cond2, __FILE__, __LINE__); return ERROR;}
-
 enum CmdNum
 {
-    PUSH    = 1,
-    ADD     = 2,
-    SUB     = 3,
-    MUL     = 4,
-    DIV     = 5,
-    POW     = 6,
-    OUT     = 7,
-    HLT     = 8,
-    PUSHREG = 9,
-    POPREG  = 10,
-    JB      = 11,
-    JBE     = 12,
-    JA      = 13,
-    JAE     = 14,
-    JE      = 15,
-    JNE     = 16,
-    SQRT    = 17,
-    IN      = 18,
-    CALL    = 19,
-    RET     = 20,
-    PUSHM   = 21,
-    POPM    = 22
+    PUSH    = 0,
+    ADD     = 1,
+    SUB     = 2,
+    MUL     = 3,
+    DIV     = 4,
+    POW     = 5,
+    OUT     = 6,
+    HLT     = 7,
+    PUSHREG = 8,
+    POPREG  = 9,
+    JB      = 10,
+    JBE     = 11,
+    JA      = 12,
+    JAE     = 13,
+    JE      = 14,
+    JNE     = 15,
+    SQRT    = 16,
+    IN      = 17,
+    CALL    = 18,
+    RET     = 19,
+    PUSHM   = 20,
+    POPM    = 21,
+    DRAW    = 22
 };
 
 #endif // DATA_H

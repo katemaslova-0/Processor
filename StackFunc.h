@@ -27,9 +27,9 @@ enum StackErr_t
     ERROR          = (1 << 7)
 };
 
-#define VerifyStackCtor(stk, capacity) if (StackCtor(stk, capacity) != NoError) {StackDtor(stk); return PROC_ERROR;}
-#define VerifyStackPush(stk, value) if (StackPush(stk, value) != NoError) {StackDtor(stk); return PROC_ERROR;}
-#define VerifyStackPop(stk, value) if (StackPop(stk, value) != NoError) {StackDtor(stk); return PROC_ERROR;}
+#define VerifyStackCtor(stk, capacity) if (StackCtor(stk, capacity) != NoError) {StackDtor(stk); return ProcError;}
+#define VerifyStackPush(stk, value) if (StackPush(stk, value) != NoError) {StackDtor(stk); return ProcError;}
+#define VerifyStackPop(stk, value) if (StackPop(stk, value) != NoError) {StackDtor(stk); return ProcError;}
 
 StackErr_t StackCtor(Stack_t * stk, int capacity);
 StackErr_t StackPush(Stack_t * stk, StackEl value);
