@@ -7,7 +7,7 @@
 #include "TranslateFunc.h"
 
 const int NUM_OF_LABELS = 10;
-const char * filename = "factorial.txt";
+const char * filename = "circle.txt";
 const char * output_filename = "translator_out.txt";
 
 int main (void)
@@ -20,7 +20,11 @@ int main (void)
     char ** textcode = NULL;
     Cmd_t * commands_buf = NULL;
     
-    InitData(&size_of_buffer, &buffer, filename); // инициализация буфера с текстовыми командами
+    if (InitData(&size_of_buffer, &buffer, filename) != NoTranslError) // инициализация буфера с текстовыми командами
+    {
+        return -1;
+    }
+
     ReadFile (buffer, &num_of_lines, filename, size_of_buffer); // считывание файла в буфер
 
     if (FillStructBuff(&commands_buf) != NoTranslError) // заполнение массива структур с данными о командах
@@ -36,7 +40,7 @@ int main (void)
     }
 
     int pos = 0; // инициализация счётчика количества элементов
-    if (CompileTwice(&code, &pos, &textcode, num_of_lines, labels, commands_buf) != NoTranslError)
+    if (CompileTwice(&code, &pos, textcode, num_of_lines, labels, commands_buf) != NoTranslError)
     {
         CleanAll(&buffer, &textcode, &code, &commands_buf);
         return -1;

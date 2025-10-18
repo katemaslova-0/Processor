@@ -29,6 +29,7 @@ int GetFileSize (const char * filename)
     return (int)st.st_size;
 }
 
+
 ProcErr_t ReadFileToCode(const char * filename, int ** code, int * size_of_code)
 {
     assert(filename);
@@ -45,17 +46,16 @@ ProcErr_t ReadFileToCode(const char * filename, int ** code, int * size_of_code)
 
     *size_of_code = GetFileSize(filename);
     *code = (int *) calloc((size_t)*size_of_code, sizeof(int));
-
     if (*code == NULL)
     {
         printf("Ошибка выделения памяти\n");
         return ProcError;
     }
 
-    int check_return = 0;
+    int return_of_fscanf = 0;
     int count = 0;
-    for (count = 0; check_return != EOF; count++)
-        check_return = fscanf(fp, "%d", &(*code)[count]);
+    for (count = 0; return_of_fscanf != EOF; count++)
+        return_of_fscanf = fscanf(fp, "%d", &(*code)[count]);
 
     *size_of_code = count + 1;
     fclose(fp);
@@ -79,6 +79,13 @@ ProcErr_t InitProcessor(SPU_t * proc, int * code, int size_of_code)
     proc->code = code;
     proc->size_of_code = size_of_code;
     proc->cmd_count = 0;
+    proc->RAM = (int *) calloc ((size_t)SIZE_OF_RAM, sizeof(int));
+
+    if (proc->RAM == NULL)
+    {
+        printf("Ошибка выделения памяти\n");
+        return ProcError;
+    }
     
     for (int count = 0; count < NUM_OF_REGS; count++)
         proc->reg[count] = 0;
@@ -194,19 +201,23 @@ ProcErr_t Calc(SPU_t * proc)
                                 return ProcError;
                             break;
 
-            case ADD:       if (AddFunc(proc) != NoProcError)
+            case ADD:       if (CalcFunc(proc, ADD) != NoProcError)
                                 return ProcError;
                             break;
 
-            case SUB:       if (SubFunc(proc) != NoProcError)
+            case SUB:       if (CalcFunc(proc, SUB) != NoProcError)
                                 return ProcError;
                             break;
 
-            case MUL:       if (MulFunc(proc) != NoProcError)
+            case MUL:       if (CalcFunc(proc, MUL) != NoProcError)
                                 return ProcError;
                             break;
 
-            case DIV:       if (DivFunc(proc) != NoProcError)
+            case DIV:       if (CalcFunc(proc, DIV) != NoProcError)
+                                return ProcError;
+                            break;
+
+            case REMAINDER: if (CalcFunc(proc, REMAINDER) != NoProcError)
                                 return ProcError;
                             break;
 
@@ -226,35 +237,39 @@ ProcErr_t Calc(SPU_t * proc)
                                 return ProcError;
                             break;
 
-            case PUSHREG:   if (PushregFunc(proc) != NoProcError)
+            case PUSHREG:   if (RegFunc(proc, PUSHREG) != NoProcError)
                                 return ProcError;
                             break;
 
-            case POPREG:    if (PopregFunc(proc) != NoProcError)
+            case POPREG:    if (RegFunc(proc, POPREG) != NoProcError)
                                 return ProcError;
                             break;
 
-            case JB:        if (JbFunc(proc) != NoProcError)
+            case JB:        if (JmpFunc(proc, JB) != NoProcError)
                                 return ProcError;
                             break;
 
-            case JBE:       if (JbeFunc(proc) != NoProcError)
+            case JBE:       if (JmpFunc(proc, JBE) != NoProcError)
                                 return ProcError;
                             break;
 
-            case JA:        if (JaFunc(proc) != NoProcError)
+            case JA:        if (JmpFunc(proc, JA) != NoProcError)
                                 return ProcError;
                             break;
 
-            case JAE:       if (JaeFunc(proc) != NoProcError)
+            case JAE:       if (JmpFunc(proc, JAE) != NoProcError)
                                 return ProcError;
                             break;
 
-            case JE:        if (JeFunc(proc) != NoProcError)
+            case JE:        if (JmpFunc(proc, JE) != NoProcError)
                                 return ProcError;
                             break;
 
-            case JNE:       if (JneFunc(proc) != NoProcError)
+            case JNE:       if (JmpFunc(proc, JNE) != NoProcError)
+                                return ProcError;
+                            break;
+            
+            case JMP:       if (JmpFunc(proc, JMP) != NoProcError)
                                 return ProcError;
                             break;
 
@@ -266,17 +281,21 @@ ProcErr_t Calc(SPU_t * proc)
                                 return ProcError;
                             break;
 
-            case PUSHM:     if (PushmFunc(proc) != NoProcError)
+            case PUSHM:     if (PushmPopmFunc(proc, PUSHM) != NoProcError)
                                 return ProcError;
                             break;
 
-            case POPM:      if (PopmFunc(proc) != NoProcError)
+            case POPM:      if (PushmPopmFunc(proc, POPM) != NoProcError)
+                                return ProcError;
+                            break;
+
+            case DRAW:      if (DrawFunc(proc) != NoProcError)
                                 return ProcError;
                             break;
 
             default:        printf("Invalid command\n");
                             ProcDtor(proc);
-                                return ProcError;
+                            return ProcError;
         }
 
         proc->cmd_count++;
@@ -293,8 +312,10 @@ ProcErr_t Calc(SPU_t * proc)
 ProcErr_t PushFunc (SPU_t * proc)
 {
     assert(proc);
+
     proc->cmd_count++;
     VerifyStackPush(&(proc->stk), (proc->code)[proc->cmd_count]);
+
     return NoProcError;
 }
 
@@ -302,59 +323,39 @@ ProcErr_t PushFunc (SPU_t * proc)
 ProcErr_t InFunc (SPU_t * proc)
 {
     assert(proc);
+
     int x = 0;
     printf("Введите число: ");
     scanf("%d", &x);
     VerifyStackPush(&(proc->stk), x);
+
     return NoProcError;
 }
 
 
-ProcErr_t AddFunc (SPU_t * proc)
+ProcErr_t CalcFunc (SPU_t * proc, int cmd)
 {
     assert(proc);
+
     int x = 0, y = 0;
     VerifyStackPop(&(proc->stk), &x);
     VerifyStackPop(&(proc->stk), &y);
-    VerifyStackPush(&(proc->stk), x + y);
-    return NoProcError;
-}
 
-
-ProcErr_t SubFunc (SPU_t * proc)
-{
-    assert(proc);
-    int x = 0, y = 0;
-    VerifyStackPop(&(proc->stk), &x);
-    VerifyStackPop(&(proc->stk), &y);
-    VerifyStackPush(&(proc->stk), y - x);
-    return NoProcError;
-}
-
-
-ProcErr_t MulFunc (SPU_t * proc)
-{
-    assert(proc);
-    int x = 0, y = 0;
-    VerifyStackPop(&(proc->stk), &x);
-    VerifyStackPop(&(proc->stk), &y);
-    VerifyStackPush(&(proc->stk), x * y);
-    return NoProcError;
-}
-
-
-ProcErr_t DivFunc (SPU_t * proc)
-{
-    assert(proc);
-    int x = 0, y = 0;
-    VerifyStackPop(&(proc->stk), &y);
-    VerifyStackPop(&(proc->stk), &x);
-    if (y == 0)
+    switch (cmd)
     {
-        printf("ERROR: Division by zero\n");
-        return ProcError;
+        case ADD:       VerifyStackPush(&(proc->stk), x + y); break;
+        case SUB:       VerifyStackPush(&(proc->stk), y - x); break;
+        case MUL:       VerifyStackPush(&(proc->stk), x * y); break;
+        case DIV:       {if (x == 0)
+                        {
+                            printf("ERROR: Division by zero\n");
+                            return ProcError;
+                        }
+                        VerifyStackPush(&(proc->stk), y / x); break;}
+        case REMAINDER: VerifyStackPush(&(proc->stk), y % x); break;
+        default:        {printf("Invalid cmd at CalcFunc\n"); return ProcError;}
     }
-    VerifyStackPush(&(proc->stk), x / y);
+
     return NoProcError;
 }
 
@@ -362,6 +363,7 @@ ProcErr_t DivFunc (SPU_t * proc)
 ProcErr_t SqrtFunc (SPU_t * proc)
 {
     assert(proc);
+
     int x = 0;
     VerifyStackPop(&(proc->stk), &x);
     if (x < 0)
@@ -371,6 +373,7 @@ ProcErr_t SqrtFunc (SPU_t * proc)
     }
     x = (int)sqrt((double)x);
     VerifyStackPush(&(proc->stk), x);
+
     return NoProcError;
 }
 
@@ -378,6 +381,7 @@ ProcErr_t SqrtFunc (SPU_t * proc)
 ProcErr_t PowFunc (SPU_t * proc)
 {
     assert(proc);
+
     int x = 0;
     VerifyStackPop(&(proc->stk), &x);
     proc->cmd_count++;
@@ -386,6 +390,7 @@ ProcErr_t PowFunc (SPU_t * proc)
     for (int count = 1; count < pow; count++)
         x *= start_x;
     VerifyStackPush(&(proc->stk), x);
+
     return NoProcError;
 }
 
@@ -393,9 +398,11 @@ ProcErr_t PowFunc (SPU_t * proc)
 ProcErr_t OutFunc (SPU_t * proc)
 {
     assert(proc);
+
     int x = 0;
     VerifyStackPop(&(proc->stk), &x);
     printf("Answer: %d\n", x);
+
     return NoProcError;
 }
 
@@ -403,113 +410,84 @@ ProcErr_t OutFunc (SPU_t * proc)
 ProcErr_t HltFunc (SPU_t * proc, bool * if_end_of_calc)
 {
     assert(proc);
+    assert(if_end_of_calc);
+
     *if_end_of_calc = true;
+
     return NoProcError;
 }
 
 
-ProcErr_t PushregFunc (SPU_t * proc)
+ProcErr_t RegFunc (SPU_t * proc, int cmd)
 {
     assert(proc);
+
     proc->cmd_count++;
     int num_of_reg = (proc->code)[proc->cmd_count] - A_ASCII;
-    VerifyStackPush(&(proc->stk), (proc->reg)[num_of_reg]);
+    
+    switch (cmd)
+    {
+        case PUSHREG:   VerifyStackPush(&(proc->stk), (proc->reg)[num_of_reg]);
+                        break;
+        case POPREG:    {int x = 0;
+                        VerifyStackPop(&(proc->stk), &x);
+                        (proc->reg)[num_of_reg] = x;
+                        break;}
+        default:        {printf("Invalid cmd at RegFunc\n"); return ProcError;}
+    }
+    
     return NoProcError;
 }
 
-
-ProcErr_t PopregFunc (SPU_t * proc)
-{   
-    assert(proc);
-    int x = 0;
-    VerifyStackPop(&(proc->stk), &x);
-    proc->cmd_count++;
-    int num_of_reg = (proc->code)[proc->cmd_count] - A_ASCII;
-    (proc->reg)[num_of_reg] = x;
-    return NoProcError;
-}
-
-
-ProcErr_t JbFunc (SPU_t * proc)
+ProcErr_t JmpFunc (SPU_t * proc, int jmp)
 {
     assert(proc);
+
+    if (jmp == JMP)
+    {
+      proc->cmd_count = (proc->code)[proc->cmd_count + 1];
+      return NoProcError;
+    }
+
     int x = 0, y = 0;
     VerifyStackPop(&(proc->stk), &x);
     VerifyStackPop(&(proc->stk), &y);
-    if (x > y)
-        proc->cmd_count = (proc->code)[proc->cmd_count + 1];
-    else
-        proc->cmd_count++;
-    return NoProcError;
-}
+    
+    switch (jmp)
+    {
+        case JB:    if (x > y)
+                        proc->cmd_count = (proc->code)[proc->cmd_count + 1];
+                    else
+                        proc->cmd_count++;
+                    break;
+        case JBE:   if (x >= y)
+                        proc->cmd_count = (proc->code)[proc->cmd_count + 1];
+                    else
+                        proc->cmd_count++;
+                    break;
+        case JA:    if (x < y)
+                        proc->cmd_count = (proc->code)[proc->cmd_count + 1];
+                    else
+                        proc->cmd_count++;
+                    break;
+        case JAE:   if (x <= y)
+                        proc->cmd_count = (proc->code)[proc->cmd_count + 1];
+                    else
+                        proc->cmd_count++;
+                    break;
+        case JE:    if (x == y)
+                        proc->cmd_count = (proc->code)[proc->cmd_count + 1];
+                    else
+                        proc->cmd_count++;
+                    break;
+        case JNE:   if (x != y)
+                        proc->cmd_count = (proc->code)[proc->cmd_count + 1];
+                    else
+                        proc->cmd_count++;
+                    break;
+        default:    {printf("Invalid cmd at JmpFunc\n"); return ProcError;}
+    }
 
-
-ProcErr_t JbeFunc (SPU_t * proc)
-{
-    assert(proc);
-    int x = 0, y = 0;
-    VerifyStackPop(&(proc->stk), &x);
-    VerifyStackPop(&(proc->stk), &y);
-    if (x >= y)
-        proc->cmd_count = (proc->code)[proc->cmd_count + 1];
-    else
-        proc->cmd_count++;
-    return NoProcError;
-}
-
-
-ProcErr_t JaFunc (SPU_t * proc)
-{
-    assert(proc);
-    int x = 0, y = 0;
-    VerifyStackPop(&(proc->stk), &x);
-    VerifyStackPop(&(proc->stk), &y);
-    if (x < y)
-        proc->cmd_count = (proc->code)[proc->cmd_count + 1];
-    else
-        proc->cmd_count++;
-    return NoProcError;
-}
-
-
-ProcErr_t JaeFunc (SPU_t * proc)
-{
-    assert(proc);
-    int x = 0, y = 0;
-    VerifyStackPop(&(proc->stk), &x);
-    VerifyStackPop(&(proc->stk), &y);
-    if (x <= y)
-        proc->cmd_count = (proc->code)[proc->cmd_count + 1];
-    else
-        proc->cmd_count++;
-    return NoProcError;
-}
-
-
-ProcErr_t JeFunc (SPU_t * proc)
-{
-    assert(proc);
-    int x = 0, y = 0;
-    VerifyStackPop(&(proc->stk), &x);
-    VerifyStackPop(&(proc->stk), &y);
-    if (x == y)
-        proc->cmd_count = (proc->code)[proc->cmd_count + 1];
-    else
-        proc->cmd_count++;
-    return NoProcError;
-}
-
-
-ProcErr_t JneFunc (SPU_t * proc)
-{
-    assert(proc);
-    int x = 0, y = 0;
-    VerifyStackPop(&(proc->stk), &x);
-    VerifyStackPop(&(proc->stk), &y);
-    if (x != y)
-        proc->cmd_count = (proc->code)[proc->cmd_count + 1];
-    else
-        proc->cmd_count++;
     return NoProcError;
 }
 
@@ -517,8 +495,10 @@ ProcErr_t JneFunc (SPU_t * proc)
 ProcErr_t CallFunc (SPU_t * proc)
 {
     assert(proc);
+
     VerifyStackPush(&(proc->stk_return), proc->cmd_count + 1);
     proc->cmd_count = (proc->code)[proc->cmd_count + 1];
+
     return NoProcError;
 }
 
@@ -526,31 +506,45 @@ ProcErr_t CallFunc (SPU_t * proc)
 ProcErr_t RetFunc (SPU_t * proc)
 {
     assert(proc);
+
     int ret_adress = 0;
     VerifyStackPop(&(proc->stk_return), &ret_adress);
     proc->cmd_count = ret_adress;
+
     return NoProcError;
 }
 
 
-ProcErr_t PushmFunc (SPU_t * proc)
+ProcErr_t PushmPopmFunc (SPU_t * proc, int cmd)
 {
     assert(proc);
-    int reg = (proc->code)[proc->cmd_count + 1];
-    proc->cmd_count++;
-    int index = (proc->reg)[reg - A_ASCII]; 
-    VerifyStackPush(&(proc->stk), (proc->RAM)[index]);
-    return NoProcError;
-}
 
-
-ProcErr_t PopmFunc (SPU_t * proc)
-{
-    assert(proc);
     int reg = (proc->code)[proc->cmd_count + 1];
     proc->cmd_count++;
     int index = (proc->reg)[reg - A_ASCII];
-    VerifyStackPop(&(proc->stk), &((proc->RAM)[index]));
+    switch (cmd)
+    {
+        case PUSHM: VerifyStackPush(&(proc->stk), (proc->RAM)[index]); break;
+        case POPM:  VerifyStackPop(&(proc->stk), &((proc->RAM)[index])); break;
+        default:    {printf("Invalid cmd at PushmPopmFunc\n"); return ProcError;}
+    }
+
+    return NoProcError;
+}
+
+
+ProcErr_t DrawFunc (SPU_t * proc)
+{
+    assert(proc);
+    assert(proc->RAM);
+
+    for (int count = 0; count < SIZE_OF_RAM; count++)
+    {
+        printf("%c ", proc->RAM[count]);
+        if ((count + 1) % 10 == 0)
+            printf("\n");
+    }
+
     return NoProcError;
 }
 
@@ -559,8 +553,10 @@ void ProcDtor (SPU_t * proc)
 {
     assert(proc);
     assert(proc->code);
+    assert(proc->RAM);
 
     free(proc->code);
+    free(proc->RAM);
     StackDtor(&(proc->stk));
     StackDtor(&(proc->stk_return));
 }

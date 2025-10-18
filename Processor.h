@@ -16,7 +16,7 @@ struct SPU_t
     int size_of_code;
     int cmd_count;
     int reg[NUM_OF_REGS];
-    int RAM[SIZE_OF_RAM];
+    int * RAM;
 };
 
 enum RegName

@@ -10,6 +10,12 @@
 
 const int SIZE_OF_CMD_STR = 40;
 
+const char * names_array[QUANTITY_OF_COMMANDS] = {  "PUSH", "ADD", "SUB","MUL", "DIV",
+                                                    "POW", "REMAINDER", "OUT", "HLT", "PUSHREG",
+                                                    "POPREG", "JB", "JBE", "JA", "JAE",
+                                                    "JE", "JNE", "JMP", "SQRT", "IN",
+                                                    "CALL", "RET", "PUSHM", "POPM", "DRAW"};
+
 #define TRANSLATOR_ERROR {printf("Error at %s:%d\n", __FILE__, __LINE__); return TranslError;}
 
 void ReadFile (char * buffer, int * num_of_lines, const char * filename, int size_of_buffer)
@@ -114,7 +120,7 @@ void OutputToFile (int * code, const char * output_filename, int num_of_el)
 }
 
 
-void InitData(int * size_of_buffer, char ** buffer, const char * filename)
+TranslErr_t InitData(int * size_of_buffer, char ** buffer, const char * filename)
 {
     assert(size_of_buffer);
     assert(buffer);
@@ -123,11 +129,17 @@ void InitData(int * size_of_buffer, char ** buffer, const char * filename)
     *size_of_buffer = GetFileSize(filename);
 
     *buffer = (char *) calloc((size_t)(*size_of_buffer) + 1, sizeof(char));
-    assert(buffer);
+    if (*buffer == NULL)
+    {
+        printf("Ошибка выделения памяти");
+        return TranslError;
+    }
+
+    return NoTranslError;
 }
 
 
-TranslErr_t CompileTwice(int ** code, int * pos, char *** textcode, int num_of_lines, int * labels, Cmd_t * commands_buf)
+TranslErr_t CompileTwice(int ** code, int * pos, char ** textcode, int num_of_lines, int * labels, Cmd_t * commands_buf)
 {
     assert(code);
     assert(pos);
@@ -168,14 +180,16 @@ int ReadArg (char * str, int * labels)
         str++;
     str++;
 
-    if (*str == '[')
-        str++;
-    else if (*str == ':')
+    if (*str == ':')
     {
         str++;
         int num_of_label = 0;
         sscanf(str, "%d", &num_of_label);
         return labels[num_of_label];
+    }
+    else if (*str == '[')
+    {
+        str++;
     }
 
     if (isalpha(*str) != 0)
@@ -191,7 +205,7 @@ int ReadArg (char * str, int * labels)
 }
 
 
-TranslErr_t TranslateCommands(int ** code, int * pos, char *** textcode, int num_of_lines, int * labels, Cmd_t * commands_buf)
+TranslErr_t TranslateCommands (int ** code, int * pos, char ** textcode, int num_of_lines, int * labels, Cmd_t * commands_buf)
 {
     assert(code);
     assert(pos);
@@ -205,7 +219,7 @@ TranslErr_t TranslateCommands(int ** code, int * pos, char *** textcode, int num
     {
         bool if_cmd_found = false;
         char cmdStr[SIZE_OF_CMD_STR] = "";
-        sscanf((*textcode)[textcode_pos], "%s", cmdStr);
+        sscanf((textcode)[textcode_pos], "%s", cmdStr);
 
         for (int count = 0; count < QUANTITY_OF_COMMANDS; count++)
         {
@@ -213,13 +227,13 @@ TranslErr_t TranslateCommands(int ** code, int * pos, char *** textcode, int num
             {
                 if ((&(commands_buf[count]))->quant_of_arg == 0)
                 {
-                    (*code)[(*pos)++] = count; // how to use enum?
+                    (*code)[(*pos)++] = count;
                     textcode_pos++;
                 }
                 else
                 {
                     (*code)[(*pos)++] = count;
-                    int arg = ReadArg((*textcode)[textcode_pos++], labels);
+                    int arg = ReadArg((textcode)[textcode_pos++], labels);
                     (*code)[(*pos)++] = arg;
                 }
                 if_cmd_found = true;
@@ -231,7 +245,7 @@ TranslErr_t TranslateCommands(int ** code, int * pos, char *** textcode, int num
             if (strchr(cmdStr, ':') != NULL)
             {
                 int num_of_label = 0;
-                sscanf((*textcode)[textcode_pos++], ":%d", &num_of_label);
+                sscanf((textcode)[textcode_pos++], ":%d", &num_of_label);
                 labels[num_of_label] = *pos - 1;
             }
             else if (strchr(cmdStr, '\0') != NULL)
@@ -250,12 +264,6 @@ TranslErr_t FillStructBuff (Cmd_t ** commands_buf)
 {
     assert(commands_buf);
 
-    const char * names_array[QUANTITY_OF_COMMANDS] = {  "PUSH", "ADD", "SUB","MUL", "DIV",
-                                                        "POW", "OUT", "HLT", "PUSHREG",
-                                                        "POPREG", "JB", "JBE", "JA", "JAE",
-                                                        "JE", "JNE", "SQRT", "IN", "CALL",
-                                                        "RET", "PUSHM", "POPM", "DRAW"};
-
     *commands_buf = (Cmd_t *) calloc ((size_t)QUANTITY_OF_COMMANDS, sizeof(Cmd_t));
 
     if (*commands_buf == NULL)
@@ -268,8 +276,23 @@ TranslErr_t FillStructBuff (Cmd_t ** commands_buf)
     {
         (&((*commands_buf)[count]))->name = names_array[count];
         (&((*commands_buf)[count]))->num_of_cmd = count;
+    }
+
+    InitNumOfArg(commands_buf);
+
+    return NoTranslError;
+}
+
+
+void InitNumOfArg(Cmd_t ** commands_buf)
+{
+    assert(commands_buf);
+
+    for (int count = 0; count < QUANTITY_OF_COMMANDS; count++)
+    {
         if ((count == ADD) || (count == SUB) || (count == MUL) || (count == DIV) || (count == OUT) ||
-            (count == HLT) || (count == SQRT) || (count == IN) || (count == RET) || (count == DRAW))
+            (count == HLT) || (count == SQRT) || (count == IN) || (count == RET) || (count == DRAW) ||
+            (count == REMAINDER))
         {
             (&((*commands_buf)[count]))->quant_of_arg = 0;
         }
@@ -278,8 +301,6 @@ TranslErr_t FillStructBuff (Cmd_t ** commands_buf)
             (&((*commands_buf)[count]))->quant_of_arg = 1;
         }
     }
-
-    return NoTranslError;
 }
 
 
