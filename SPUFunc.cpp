@@ -9,16 +9,32 @@
 #include "SPUFunc.h"
 #include "Processor.h"
 
-const int A_ASCII = 65;
+const int A_ASCII = 'A';
 
 #define PROC_OK(proc)   if (ProcErr(proc) != NoProcError) { \
-                        printf("ProcDump at %s:%d\n", __FILE__, __LINE__); \
-                        int result = ProcErr(proc); \
-                        ProcDump(proc); \
-                        OutputProcErrorCode(result); \
-                        ProcDtor(proc); \
-                        return ProcError; \
+                            printf("ProcDump at %s:%d\n", __FILE__, __LINE__); \
+                            int result = ProcErr(proc); \
+                            ProcDump(proc); \
+                            OutputProcErrorCode(result); \
+                            ProcDtor(proc); \
+                            return ProcError; \
                         }
+
+
+static ProcErr_t PushFunc (SPU_t * proc);
+static ProcErr_t InFunc (SPU_t * proc);
+static ProcErr_t CalcFunc (SPU_t * proc, int cmd);
+static ProcErr_t SqrtFunc (SPU_t * proc);
+static ProcErr_t PowFunc (SPU_t * proc);
+static ProcErr_t OutFunc (SPU_t * proc);
+static ProcErr_t HltFunc (SPU_t * proc, bool * if_end_of_calc);
+static ProcErr_t RegFunc (SPU_t * proc, int cmd);
+static ProcErr_t JmpFunc (SPU_t * proc, int jmp);
+static ProcErr_t CallFunc (SPU_t * proc);
+static ProcErr_t RetFunc (SPU_t * proc);
+static ProcErr_t PushmPopmFunc (SPU_t * proc, int cmd);
+static ProcErr_t DrawFunc (SPU_t * proc);
+
 
 int GetFileSize (const char * filename)
 {
@@ -200,7 +216,7 @@ ProcErr_t Calc(SPU_t * proc)
             case IN:        if (InFunc(proc) != NoProcError)
                                 return ProcError;
                             break;
-
+            // DanilaZhebryakov: TODO merge these
             case ADD:       if (CalcFunc(proc, ADD) != NoProcError)
                                 return ProcError;
                             break;
@@ -309,7 +325,7 @@ ProcErr_t Calc(SPU_t * proc)
 }
 
 
-ProcErr_t PushFunc (SPU_t * proc)
+static ProcErr_t PushFunc (SPU_t * proc)
 {
     assert(proc);
 
@@ -320,7 +336,7 @@ ProcErr_t PushFunc (SPU_t * proc)
 }
 
 
-ProcErr_t InFunc (SPU_t * proc)
+static ProcErr_t InFunc (SPU_t * proc)
 {
     assert(proc);
 
@@ -333,7 +349,7 @@ ProcErr_t InFunc (SPU_t * proc)
 }
 
 
-ProcErr_t CalcFunc (SPU_t * proc, int cmd)
+static ProcErr_t CalcFunc (SPU_t * proc, int cmd)
 {
     assert(proc);
 
@@ -360,7 +376,7 @@ ProcErr_t CalcFunc (SPU_t * proc, int cmd)
 }
 
 
-ProcErr_t SqrtFunc (SPU_t * proc)
+static ProcErr_t SqrtFunc (SPU_t * proc)
 {
     assert(proc);
 
@@ -378,7 +394,7 @@ ProcErr_t SqrtFunc (SPU_t * proc)
 }
 
 
-ProcErr_t PowFunc (SPU_t * proc)
+static ProcErr_t PowFunc (SPU_t * proc)
 {
     assert(proc);
 
@@ -395,7 +411,7 @@ ProcErr_t PowFunc (SPU_t * proc)
 }
 
 
-ProcErr_t OutFunc (SPU_t * proc)
+static ProcErr_t OutFunc (SPU_t * proc)
 {
     assert(proc);
 
@@ -407,7 +423,7 @@ ProcErr_t OutFunc (SPU_t * proc)
 }
 
 
-ProcErr_t HltFunc (SPU_t * proc, bool * if_end_of_calc)
+static ProcErr_t HltFunc (SPU_t * proc, bool * if_end_of_calc)
 {
     assert(proc);
     assert(if_end_of_calc);
@@ -418,7 +434,7 @@ ProcErr_t HltFunc (SPU_t * proc, bool * if_end_of_calc)
 }
 
 
-ProcErr_t RegFunc (SPU_t * proc, int cmd)
+static ProcErr_t RegFunc (SPU_t * proc, int cmd)
 {
     assert(proc);
 
@@ -439,7 +455,7 @@ ProcErr_t RegFunc (SPU_t * proc, int cmd)
     return NoProcError;
 }
 
-ProcErr_t JmpFunc (SPU_t * proc, int jmp)
+static ProcErr_t JmpFunc (SPU_t * proc, int jmp)
 {
     assert(proc);
 
@@ -492,7 +508,7 @@ ProcErr_t JmpFunc (SPU_t * proc, int jmp)
 }
 
 
-ProcErr_t CallFunc (SPU_t * proc)
+static ProcErr_t CallFunc (SPU_t * proc)
 {
     assert(proc);
 
@@ -503,7 +519,7 @@ ProcErr_t CallFunc (SPU_t * proc)
 }
 
 
-ProcErr_t RetFunc (SPU_t * proc)
+static ProcErr_t RetFunc (SPU_t * proc)
 {
     assert(proc);
 
@@ -515,7 +531,7 @@ ProcErr_t RetFunc (SPU_t * proc)
 }
 
 
-ProcErr_t PushmPopmFunc (SPU_t * proc, int cmd)
+static ProcErr_t PushmPopmFunc (SPU_t * proc, int cmd)
 {
     assert(proc);
 
@@ -533,7 +549,7 @@ ProcErr_t PushmPopmFunc (SPU_t * proc, int cmd)
 }
 
 
-ProcErr_t DrawFunc (SPU_t * proc)
+static ProcErr_t DrawFunc (SPU_t * proc)
 {
     assert(proc);
     assert(proc->RAM);

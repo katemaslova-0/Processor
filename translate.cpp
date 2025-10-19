@@ -18,7 +18,6 @@ int main (void)
     int labels[NUM_OF_LABELS] = {};
     int * code = NULL;
     char ** textcode = NULL;
-    Cmd_t * commands_buf = NULL;
     
     if (InitData(&size_of_buffer, &buffer, filename) != NoTranslError) // инициализация буфера с текстовыми командами
     {
@@ -27,27 +26,21 @@ int main (void)
 
     ReadFile (buffer, &num_of_lines, filename, size_of_buffer); // считывание файла в буфер
 
-    if (FillStructBuff(&commands_buf) != NoTranslError) // заполнение массива структур с данными о командах
-    {
-        CleanAll(&buffer, &textcode, &code, &commands_buf);
-        return -1;
-    }
-
     if (FillPointBuff(buffer, num_of_lines, &textcode) != NoTranslError) // заполнение массива указателей на строки
     {
-        CleanAll(&buffer, &textcode, &code, &commands_buf);
+        CleanAll(&buffer, &textcode, &code);
         return -1;
     }
 
     int pos = 0; // инициализация счётчика количества элементов
-    if (CompileTwice(&code, &pos, textcode, num_of_lines, labels, commands_buf) != NoTranslError)
+    if (CompileTwice(&code, &pos, textcode, num_of_lines, labels) != NoTranslError)
     {
-        CleanAll(&buffer, &textcode, &code, &commands_buf);
+        CleanAll(&buffer, &textcode, &code);
         return -1;
     }
 
     OutputToFile (code, output_filename, pos); // запись байт-кода в файл
-    CleanAll(&buffer, &textcode, &code, &commands_buf); // очистка буферов
+    CleanAll(&buffer, &textcode, &code); // очистка буферов
 
     return 0;
 }

@@ -9,11 +9,19 @@ enum TranslErr_t
     TranslError         = (1 << 1)
 };
 
+enum Arg_t
+{
+    NoArg   = 0,
+    IntArg  = 1,
+    CharArg = 2
+};
+
 struct Cmd_t
 {
     const char * name;
     int num_of_cmd;
     int quant_of_arg;
+    Arg_t type_of_arg;
 };
 
 int CountLines (char * buffer); // считает количество строк
@@ -23,12 +31,10 @@ void ReworkBuffer (char * buffer, char sym_to_find, char sym_to_put_instead, int
 TranslErr_t FillPointBuff (char * buffer, int num_of_lines, char *** text); // заполняет массив указателей
 void OutputToFile (int * code, const char * output_filename, int num_of_el); // выводит строки из буфера указателей в файл
 TranslErr_t InitData(int * size_of_buffer, char ** buffer, const char * filename); // инициализация буфера с текстовыми командами
-TranslErr_t TranslateCommands(int ** code, int * pos, char ** textcode, int num_of_lines, int * labels, Cmd_t * commands_buf); // перевод текстовых комманд в байт-код
-TranslErr_t CompileTwice(int ** code, int * pos, char ** textcode, int num_of_lines, int * labels, Cmd_t * commands_buf); // дважды запускает перевод текстовых команд в байт-код
-void CleanAll (char ** buffer, char *** textcode, int ** code, Cmd_t ** commands_buf); // очистка буферов
-int ReadArg (char * str, int * labels); // считывает аргументы команд
-TranslErr_t FillStructBuff (Cmd_t ** commands_buf); // заполняет массив структур для команд
+TranslErr_t TranslateCommands(int ** code, int * pos, char ** textcode, int num_of_lines, int * labels); // перевод текстовых комманд в байт-код
+TranslErr_t CompileTwice(int ** code, int * pos, char ** textcode, int num_of_lines, int * labels); // дважды запускает перевод текстовых команд в байт-код
+void CleanAll (char ** buffer, char *** textcode, int ** code); // очистка буферов
+int ReadArg (char * str, int * labels, int count); // считывает аргументы команд
 int GetFileSize (const char * filename); // получение размера файла
-void InitNumOfArg(Cmd_t ** commands_buf); // заполнение количеств аргументов команд
 
 #endif // TRANSLATEFUNC_H
