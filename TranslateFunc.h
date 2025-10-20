@@ -36,5 +36,7 @@ TranslErr_t CompileTwice(int ** code, int * pos, char ** textcode, int num_of_li
 void CleanAll (char ** buffer, char *** textcode, int ** code); // очистка буферов
 TranslErr_t ReadArg (int * arg, char * str, int * labels, int count); // считывает аргументы команд
 int GetFileSize (const char * filename); // получение размера файла
+void TranslateLabel (int pos, char ** textcode, int * labels, int textcode_pos);
+int GetCommandNumber (char * cmdStr);
 
 #endif // TRANSLATEFUNC_H

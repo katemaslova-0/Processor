@@ -256,24 +256,25 @@ TranslErr_t TranslateCommands (int ** code, int * pos, char ** textcode, int num
     assert(pos);
     assert(textcode);
     assert(labels);
-
-    int textcode_pos = 0;
-
     // структура для аргументов!
 
-    while (textcode_pos < num_of_lines) // for?
+   for (int textcode_pos = 0; textcode_pos < num_of_lines; textcode_pos++)
     {
-        bool if_cmd_found = false;
         char cmdStr[SIZE_OF_CMD_STR] = "";
         sscanf((textcode)[textcode_pos], "%s", cmdStr);
 
-        /*if (cmdStr[0] == ':')
+        if (cmdStr[0] == ':')
         {
-            TranslateLabel(...);
+            TranslateLabel(*pos, textcode, labels, textcode_pos);
             continue;
         }
+        else if(cmdStr[0] == '\0')
+            continue;
 
-        int count = CheckCommandNumber(cmdStr);
+        int count = GetCommandNumber(cmdStr);
+        if (count == -1)
+            TRANSLATOR_ERROR;
+
         (*code)[(*pos)++] = count;
 
         if ((&(commands_buf[count]))->quant_of_arg == 1)
@@ -282,43 +283,35 @@ TranslErr_t TranslateCommands (int ** code, int * pos, char ** textcode, int num
             if (ReadArg(&arg, (textcode)[textcode_pos], labels, count) != NoTranslError)
                 return TranslError;
             (*code)[(*pos)++] = arg;
-        }*/
-
-
-
-        for (int count = 0; count < QUANTITY_OF_COMMANDS; count++)
-        {
-            if (strcmp(cmdStr, (&(commands_buf[count]))->name) == 0)
-            {
-                (*code)[(*pos)++] = count;
-                if ((&(commands_buf[count]))->quant_of_arg == 1)
-                {
-                    int arg = 0;
-                    if (ReadArg(&arg, (textcode)[textcode_pos], labels, count) != NoTranslError)
-                        return TranslError;
-                    (*code)[(*pos)++] = arg;
-                }
-                textcode_pos++;
-                if_cmd_found = true;
-                break;
-            }
-        }
-        if (if_cmd_found == false)
-        {
-            if (strchr(cmdStr, ':') != NULL)
-            {
-                int num_of_label = 0;
-                sscanf((textcode)[textcode_pos++], ":%d", &num_of_label);
-                labels[num_of_label] = *pos - 1;
-            }
-            else if (cmdStr[0] == '\0')
-                textcode_pos++;
-            else
-                TRANSLATOR_ERROR;
         }
     }
 
     return NoTranslError;
+}
+
+
+int GetCommandNumber (char * cmdStr)
+{
+    assert(cmdStr);
+
+    for (int count = 0; count < QUANTITY_OF_COMMANDS; count++)
+    {
+        if (strcmp(cmdStr, (commands_buf[count]).name) == 0)
+            return (commands_buf[count]).num_of_cmd;
+    }
+
+    return -1;
+}
+
+
+void TranslateLabel (int pos, char ** textcode, int * labels, int textcode_pos)
+{
+    assert(textcode);
+    assert(labels);
+
+    int num_of_label = 0;
+    sscanf((textcode)[textcode_pos], ":%d", &num_of_label);
+    labels[num_of_label] = pos - 1;
 }
 
 
