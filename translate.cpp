@@ -7,7 +7,7 @@
 #include "TranslateFunc.h"
 
 const int NUM_OF_LABELS = 10;
-const char * filename = "circle.txt";
+const char * filename = "squaresolver.txt";
 const char * output_filename = "translator_out.txt";
 
 int main (void)
@@ -18,13 +18,17 @@ int main (void)
     int labels[NUM_OF_LABELS] = {};
     int * code = NULL;
     char ** textcode = NULL;
-    
+
     if (InitData(&size_of_buffer, &buffer, filename) != NoTranslError) // инициализация буфера с текстовыми командами
     {
         return -1;
     }
 
-    ReadFile (buffer, &num_of_lines, filename, size_of_buffer); // считывание файла в буфер
+    if (ReadFile (buffer, &num_of_lines, filename, size_of_buffer) != NoTranslError) // считывание файла в буфер
+    {
+        CleanAll(&buffer, &textcode, &code);
+        return -1;
+    }
 
     if (FillPointBuff(buffer, num_of_lines, &textcode) != NoTranslError) // заполнение массива указателей на строки
     {
@@ -39,7 +43,12 @@ int main (void)
         return -1;
     }
 
-    OutputToFile (code, output_filename, pos); // запись байт-кода в файл
+    if (OutputToFile(code, output_filename, pos) != NoTranslError) // запись байт-кода в файл
+    {
+        CleanAll(&buffer, &textcode, &code);
+        return -1;
+    }
+
     CleanAll(&buffer, &textcode, &code); // очистка буферов
 
     return 0;

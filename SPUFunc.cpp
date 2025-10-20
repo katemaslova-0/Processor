@@ -53,7 +53,7 @@ ProcErr_t ReadFileToCode(const char * filename, int ** code, int * size_of_code)
     assert(size_of_code);
 
     FILE * fp = fopen(filename, "r");
-    
+
     if (fp == NULL)
     {
         printf("Ошибка при открытии файла\n");
@@ -102,13 +102,13 @@ ProcErr_t InitProcessor(SPU_t * proc, int * code, int size_of_code)
         printf("Ошибка выделения памяти\n");
         return ProcError;
     }
-    
+
     for (int count = 0; count < NUM_OF_REGS; count++)
         proc->reg[count] = 0;
 
     for (int count = 0; count < SIZE_OF_RAM; count++)
         proc->RAM[count] = 0;
-    
+
     PROC_OK(proc);
     return NoProcError;
 }
@@ -162,7 +162,7 @@ int ProcDump(SPU_t * proc)
         return 0;
     }
     printf("Proc [%p]\n", proc);
-    
+
     StackDump(&(proc->stk));
     StackDump(&(proc->stk_return));
 
@@ -195,7 +195,7 @@ int ProcDump(SPU_t * proc)
     {
         printf("[%d]  ", (proc->RAM)[count]);
     }
-    
+
     return 0;
 }
 
@@ -216,20 +216,10 @@ ProcErr_t Calc(SPU_t * proc)
             case IN:        if (InFunc(proc) != NoProcError)
                                 return ProcError;
                             break;
-            // DanilaZhebryakov: TODO merge these
-            case ADD:       if (CalcFunc(proc, ADD) != NoProcError)
-                                return ProcError;
-                            break;
-
-            case SUB:       if (CalcFunc(proc, SUB) != NoProcError)
-                                return ProcError;
-                            break;
-
-            case MUL:       if (CalcFunc(proc, MUL) != NoProcError)
-                                return ProcError;
-                            break;
-
-            case DIV:       if (CalcFunc(proc, DIV) != NoProcError)
+            case ADD:
+            case SUB:
+            case MUL:
+            case DIV:       if (CalcFunc(proc, proc->code[proc->cmd_count]) != NoProcError)
                                 return ProcError;
                             break;
 
@@ -253,39 +243,18 @@ ProcErr_t Calc(SPU_t * proc)
                                 return ProcError;
                             break;
 
-            case PUSHREG:   if (RegFunc(proc, PUSHREG) != NoProcError)
+            case PUSHREG:
+            case POPREG:    if (RegFunc(proc, proc->code[proc->cmd_count]) != NoProcError)
                                 return ProcError;
                             break;
 
-            case POPREG:    if (RegFunc(proc, POPREG) != NoProcError)
-                                return ProcError;
-                            break;
-
-            case JB:        if (JmpFunc(proc, JB) != NoProcError)
-                                return ProcError;
-                            break;
-
-            case JBE:       if (JmpFunc(proc, JBE) != NoProcError)
-                                return ProcError;
-                            break;
-
-            case JA:        if (JmpFunc(proc, JA) != NoProcError)
-                                return ProcError;
-                            break;
-
-            case JAE:       if (JmpFunc(proc, JAE) != NoProcError)
-                                return ProcError;
-                            break;
-
-            case JE:        if (JmpFunc(proc, JE) != NoProcError)
-                                return ProcError;
-                            break;
-
-            case JNE:       if (JmpFunc(proc, JNE) != NoProcError)
-                                return ProcError;
-                            break;
-            
-            case JMP:       if (JmpFunc(proc, JMP) != NoProcError)
+            case JB:
+            case JBE:
+            case JA:
+            case JAE:
+            case JE:
+            case JNE:
+            case JMP:       if (JmpFunc(proc, proc->code[proc->cmd_count]) != NoProcError)
                                 return ProcError;
                             break;
 
@@ -310,7 +279,6 @@ ProcErr_t Calc(SPU_t * proc)
                             break;
 
             default:        printf("Invalid command\n");
-                            ProcDtor(proc);
                             return ProcError;
         }
 
@@ -440,7 +408,7 @@ static ProcErr_t RegFunc (SPU_t * proc, int cmd)
 
     proc->cmd_count++;
     int num_of_reg = (proc->code)[proc->cmd_count] - A_ASCII;
-    
+
     switch (cmd)
     {
         case PUSHREG:   VerifyStackPush(&(proc->stk), (proc->reg)[num_of_reg]);
@@ -451,59 +419,39 @@ static ProcErr_t RegFunc (SPU_t * proc, int cmd)
                         break;}
         default:        {printf("Invalid cmd at RegFunc\n"); return ProcError;}
     }
-    
+
     return NoProcError;
 }
+
 
 static ProcErr_t JmpFunc (SPU_t * proc, int jmp)
 {
     assert(proc);
 
+    int next = (proc->code)[proc->cmd_count + 1];
+
     if (jmp == JMP)
     {
-      proc->cmd_count = (proc->code)[proc->cmd_count + 1];
+      proc->cmd_count = next;
       return NoProcError;
     }
 
     int x = 0, y = 0;
     VerifyStackPop(&(proc->stk), &x);
     VerifyStackPop(&(proc->stk), &y);
-    
+
     switch (jmp)
     {
-        case JB:    if (x > y)
-                        proc->cmd_count = (proc->code)[proc->cmd_count + 1];
-                    else
-                        proc->cmd_count++;
-                    break;
-        case JBE:   if (x >= y)
-                        proc->cmd_count = (proc->code)[proc->cmd_count + 1];
-                    else
-                        proc->cmd_count++;
-                    break;
-        case JA:    if (x < y)
-                        proc->cmd_count = (proc->code)[proc->cmd_count + 1];
-                    else
-                        proc->cmd_count++;
-                    break;
-        case JAE:   if (x <= y)
-                        proc->cmd_count = (proc->code)[proc->cmd_count + 1];
-                    else
-                        proc->cmd_count++;
-                    break;
-        case JE:    if (x == y)
-                        proc->cmd_count = (proc->code)[proc->cmd_count + 1];
-                    else
-                        proc->cmd_count++;
-                    break;
-        case JNE:   if (x != y)
-                        proc->cmd_count = (proc->code)[proc->cmd_count + 1];
-                    else
-                        proc->cmd_count++;
-                    break;
-        default:    {printf("Invalid cmd at JmpFunc\n"); return ProcError;}
+        case JB:  { if (x >  y) {proc->cmd_count = next;  return NoProcError;} } break;
+        case JBE: { if (x >= y) {proc->cmd_count = next;  return NoProcError;} } break;
+        case JA:  { if (x <  y) {proc->cmd_count = next;  return NoProcError;} } break;
+        case JAE: { if (x <= y) {proc->cmd_count = next;  return NoProcError;} } break;
+        case JE:  { if (x == y) {proc->cmd_count = next;  return NoProcError;} } break;
+        case JNE: { if (x != y) {proc->cmd_count = next;  return NoProcError;} } break;
+        default:  {printf("Invalid cmd at JmpFunc\n");   return ProcError;   }
     }
 
+    proc->cmd_count++;
     return NoProcError;
 }
 

@@ -9,7 +9,6 @@
 
 #define MY_ASSERT(cond, cond2)  if (!(cond)) {fprintf(stderr, "%s\nError in file %s in line %d\n", \
                                 cond2, __FILE__, __LINE__); return ERROR;}
-// DanilaZhebryakov: suggestion to move error printing to main                                
 #define STACK_OK(stk)           if (StackErr(stk) != NoError) { \
                                 printf("\nStackDump() at %s:%d\n", __FILE__, __LINE__); \
                                 int result = StackErr(stk); \
@@ -132,7 +131,7 @@ int StackDump (Stack_t * stk)
 
     printf("Stack [%p]\n", stk);
     printf("{\n     size = %d\n     capacity = %d\n", stk->size, stk->capacity);
-    
+
     if (stk->data != NULL)
     {
         printf("     data[%p]\n", stk->data);

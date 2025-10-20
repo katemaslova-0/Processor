@@ -12,9 +12,8 @@ const int SIZE_OF_CMD_STR = 40;
 
 #define TRANSLATOR_ERROR {printf("Error at %s:%d\n", __FILE__, __LINE__); return TranslError;}
 
-// Даня Жебряков: добавлен static const, перенесён из translate.cpp
-static const Cmd_t commands_buf[QUANTITY_OF_COMMANDS] =   { {"PUSH",        PUSH,      1, IntArg}, // enum for type of arg
-                                                            {"ADD",         ADD,       0, NoArg}, 
+static const Cmd_t commands_buf[QUANTITY_OF_COMMANDS] =   { {"PUSH",        PUSH,      1, IntArg},
+                                                            {"ADD",         ADD,       0, NoArg},
                                                             {"SUB",         SUB,       0, NoArg},
                                                             {"MUL",         MUL,       0, NoArg},
                                                             {"DIV",         DIV,       0, NoArg},
@@ -36,17 +35,21 @@ static const Cmd_t commands_buf[QUANTITY_OF_COMMANDS] =   { {"PUSH",        PUSH
                                                             {"CALL",        CALL,      1, IntArg},
                                                             {"RET",         RET,       0, NoArg},
                                                             {"PUSHM",       PUSHM,     1, CharArg},
-                                                            {"POPM",        POPM,      1, CharArg}, 
+                                                            {"POPM",        POPM,      1, CharArg},
                                                             {"DRAW",        DRAW,      0, NoArg}};
 
-void ReadFile (char * buffer, int * num_of_lines, const char * filename, int size_of_buffer)
+TranslErr_t ReadFile (char * buffer, int * num_of_lines, const char * filename, int size_of_buffer)
 {
     assert(buffer);
     assert(num_of_lines);
     assert(filename);
 
     FILE * fp = fopen(filename, "r");
-    assert(fp);
+    if (fp == NULL)
+    {
+        printf("Ошибка открытия файла в ReadFile\n");
+        return TranslError;
+    }
 
     fread(buffer, sizeof(char), (size_t)size_of_buffer, fp);
     assert(ferror(fp) == 0);
@@ -55,6 +58,7 @@ void ReadFile (char * buffer, int * num_of_lines, const char * filename, int siz
 
     ReworkBuffer(buffer, '\n', '\0', size_of_buffer);
     fclose(fp);
+    return NoTranslError;
 }
 
 
@@ -67,12 +71,12 @@ TranslErr_t FillPointBuff (char * buffer, int num_of_lines, char *** text)
     *text = (char **) calloc((size_t)num_of_lines, sizeof(char *));
     if (*text == NULL)
     {
-        printf("Ошибка выделения памяти\n"); // Даня Жебряков: вынести в main, можно заменить на perror
+        printf("Ошибка выделения памяти\n");
         return TranslError;
     }
     char * ptr_buffer = buffer;
     (*text)[count] = buffer;
-   
+
     for (count = 1; count < num_of_lines; count++)
     {
         while (*ptr_buffer != '\0')
@@ -80,7 +84,7 @@ TranslErr_t FillPointBuff (char * buffer, int num_of_lines, char *** text)
             ptr_buffer++;
         }
         ptr_buffer++;
-        (*text)[count] = ptr_buffer; 
+        (*text)[count] = ptr_buffer;
     }
 
     return NoTranslError;
@@ -124,13 +128,17 @@ int CountLines (char * buffer)
 }
 
 
-void OutputToFile (int * code, const char * output_filename, int num_of_el)
-{  
+TranslErr_t OutputToFile (int * code, const char * output_filename, int num_of_el)
+{
     assert(code);
     assert(output_filename);
 
     FILE * fp_out = fopen(output_filename, "w");
-    assert(fp_out);
+    if (fp_out == NULL)
+    {
+        printf("Ошибка открытия файла в OutputToFile\n");
+        return TranslError;
+    }
 
     for (int count = 0; count < num_of_el; count++)
     {
@@ -138,6 +146,7 @@ void OutputToFile (int * code, const char * output_filename, int num_of_el)
     }
 
     fclose(fp_out);
+    return NoTranslError;
 }
 
 
@@ -188,15 +197,16 @@ TranslErr_t CompileTwice(int ** code, int * pos, char ** textcode, int num_of_li
 }
 
 
-int ReadArg (char * str, int * labels, int count)
+TranslErr_t ReadArg (int * arg, char * str, int * labels, int count)
 {
+    assert(arg);
     assert(str);
     assert(labels);
 
     int arg_d = 0;
     char arg_c = '\0';
 
-    while (*str != ' ')
+    while (*str != ' ') // isspace + new func
         str++;
     str++;
 
@@ -205,9 +215,10 @@ int ReadArg (char * str, int * labels, int count)
         str++;
         int num_of_label = 0;
         sscanf(str, "%d", &num_of_label);
-        return labels[num_of_label];
+        *arg = labels[num_of_label]; // new func
+        return NoTranslError;
     }
-    else if (*str == '[')
+    else if (*str == '[') // check
     {
         str++;
     }
@@ -216,11 +227,12 @@ int ReadArg (char * str, int * labels, int count)
     {
         if ((commands_buf[count]).type_of_arg != CharArg)
         {
-            printf("Ошибка в типе аргумента команды\n");
-            //return TranslError;
+            printf("Ошибка в типе аргумента команды\n"); // "test.asm:12: Ошибка в типе CharArg аргумента 234 команды PushReg\n"
+            return TranslError;
         }
         sscanf(str, "%c", &arg_c);
-        return (int)arg_c;
+        *arg = (int)arg_c;
+        return NoTranslError;
     }
     else
     {
@@ -230,8 +242,11 @@ int ReadArg (char * str, int * labels, int count)
             return TranslError;
         }
         sscanf(str, "%d", &arg_d);
-        return arg_d;
+        *arg = arg_d;
+        return NoTranslError;
     }
+
+    return NoTranslError;
 }
 
 
@@ -244,21 +259,43 @@ TranslErr_t TranslateCommands (int ** code, int * pos, char ** textcode, int num
 
     int textcode_pos = 0;
 
-    while (textcode_pos < num_of_lines)
+    // структура для аргументов!
+
+    while (textcode_pos < num_of_lines) // for?
     {
         bool if_cmd_found = false;
         char cmdStr[SIZE_OF_CMD_STR] = "";
         sscanf((textcode)[textcode_pos], "%s", cmdStr);
+
+        /*if (cmdStr[0] == ':')
+        {
+            TranslateLabel(...);
+            continue;
+        }
+
+        int count = CheckCommandNumber(cmdStr);
+        (*code)[(*pos)++] = count;
+
+        if ((&(commands_buf[count]))->quant_of_arg == 1)
+        {
+            int arg = 0;
+            if (ReadArg(&arg, (textcode)[textcode_pos], labels, count) != NoTranslError)
+                return TranslError;
+            (*code)[(*pos)++] = arg;
+        }*/
+
+
 
         for (int count = 0; count < QUANTITY_OF_COMMANDS; count++)
         {
             if (strcmp(cmdStr, (&(commands_buf[count]))->name) == 0)
             {
                 (*code)[(*pos)++] = count;
-                // Danila Zhebryakov: eliminated redundant else
                 if ((&(commands_buf[count]))->quant_of_arg == 1)
                 {
-                    int arg = ReadArg((textcode)[textcode_pos], labels, count);
+                    int arg = 0;
+                    if (ReadArg(&arg, (textcode)[textcode_pos], labels, count) != NoTranslError)
+                        return TranslError;
                     (*code)[(*pos)++] = arg;
                 }
                 textcode_pos++;
@@ -274,12 +311,11 @@ TranslErr_t TranslateCommands (int ** code, int * pos, char ** textcode, int num
                 sscanf((textcode)[textcode_pos++], ":%d", &num_of_label);
                 labels[num_of_label] = *pos - 1;
             }
-            else if (cmdStr[0] == '\0') // DanilaZhebryakov: fix improper use of strchr
+            else if (cmdStr[0] == '\0')
                 textcode_pos++;
             else
                 TRANSLATOR_ERROR;
         }
-    
     }
 
     return NoTranslError;
