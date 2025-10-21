@@ -7,10 +7,9 @@
 #include "TranslateFunc.h"
 
 const int NUM_OF_LABELS = 10;
-const char * filename = "squaresolver.txt";
 const char * output_filename = "translator_out.txt";
 
-int main (void)
+int main (int argc, char * argv[])
 {
     int num_of_lines = 0;
     int size_of_buffer = 0;
@@ -18,6 +17,13 @@ int main (void)
     int labels[NUM_OF_LABELS] = {};
     int * code = NULL;
     char ** textcode = NULL;
+
+    if (argc != 2)
+    {
+        printf("Invalid command line arguments\n");
+        return -1;
+    }
+    const char * filename = argv[1];
 
     if (InitData(&size_of_buffer, &buffer, filename) != NoTranslError) // инициализация буфера с текстовыми командами
     {

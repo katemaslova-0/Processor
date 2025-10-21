@@ -150,7 +150,7 @@ TranslErr_t OutputToFile (int * code, const char * output_filename, int num_of_e
 }
 
 
-TranslErr_t InitData(int * size_of_buffer, char ** buffer, const char * filename)
+TranslErr_t InitData (int * size_of_buffer, char ** buffer, const char * filename)
 {
     assert(size_of_buffer);
     assert(buffer);
@@ -169,7 +169,7 @@ TranslErr_t InitData(int * size_of_buffer, char ** buffer, const char * filename
 }
 
 
-TranslErr_t CompileTwice(int ** code, int * pos, char ** textcode, int num_of_lines, int * labels)
+TranslErr_t CompileTwice (int ** code, int * pos, char ** textcode, int num_of_lines, int * labels)
 {
     assert(code);
     assert(pos);
@@ -197,56 +197,133 @@ TranslErr_t CompileTwice(int ** code, int * pos, char ** textcode, int num_of_li
 }
 
 
+void SkipSpaces (char ** str)
+{
+    while (isspace(**str) == 0)
+        (*str)++;
+    (*str)++;
+}
+
+
+int ReadLabel (char * str, int * labels)
+{
+    assert(str);
+    assert(labels);
+
+    int num_of_label = 0;
+    sscanf(str, "%d", &num_of_label);
+
+    return labels[num_of_label];
+}
+
+
+TranslErr_t ReadRamArg (char ** str, int * arg, int count)
+{
+    assert(str);
+    assert(arg);
+
+    char arg_c = '\0';
+
+    (*str)++;
+    if ((commands_buf[count]).num_of_cmd != PUSHM && (commands_buf[count]).num_of_cmd != POPM)
+    {
+        printf("Ошибка в типе аргумента команды %s\n", (commands_buf[count]).name);
+        return TranslError;
+    }
+
+    if (isalpha(**str) == 0)
+    {
+        printf("Ошибка в типе аргумента команды %s\n", (commands_buf[count]).name);
+        return TranslError;
+    }
+    sscanf(*str, "%c", &arg_c);
+    *arg = (int)arg_c;
+    (*str)++;
+    if (**str != 'X')
+    {
+        printf("Ошибка в типе аргумента команды %s\n", (commands_buf[count]).name);
+        return TranslError;
+    }
+    (*str)++;
+    if (**str != ']')
+    {
+        printf("Ошибка в типе аргумента команды %s\n", (commands_buf[count]).name);
+        return TranslError;
+    }
+
+    return NoTranslError;
+}
+
+
+TranslErr_t ReadCharArg (char * str, int * arg, int count)
+{
+    assert(arg);
+    assert(str);
+
+    char arg_c = '\0';
+    if ((commands_buf[count]).type_of_arg != CharArg)
+    {
+        printf("Ошибка в типе CharArg аргумента %d команды %s\n", *str, (commands_buf[count]).name);  // "test.asm:12: Ошибка в типе CharArg аргумента 234 команды PushReg\n"
+        return TranslError;
+    }
+    sscanf(str, "%c", &arg_c);
+    *arg = (int)arg_c;
+
+    return NoTranslError;
+}
+
+
+TranslErr_t ReadIntArg (char * str, int * arg, int count)
+{
+    assert(str);
+    assert(arg);
+
+    int arg_d = 0;
+    if ((commands_buf[count]).type_of_arg != IntArg)
+    {
+        printf("Ошибка в типе IntArg аргумента %c команды %s\n", *str, (commands_buf[count]).name);
+        return TranslError;
+    }
+    sscanf(str, "%d", &arg_d);
+    *arg = arg_d;
+
+    return NoTranslError;
+}
+
+
 TranslErr_t ReadArg (int * arg, char * str, int * labels, int count)
 {
     assert(arg);
     assert(str);
     assert(labels);
 
-    int arg_d = 0;
-    char arg_c = '\0';
-
-    while (*str != ' ') // isspace + new func
-        str++;
-    str++;
+    SkipSpaces(&str);
 
     if (*str == ':')
     {
         str++;
-        int num_of_label = 0;
-        sscanf(str, "%d", &num_of_label);
-        *arg = labels[num_of_label]; // new func
+        *arg = ReadLabel(str, labels);
         return NoTranslError;
     }
-    else if (*str == '[') // check
+    else if (*str == '[')
     {
-        str++;
+        if (ReadRamArg(&str, arg, count) != NoTranslError)
+            return TranslError;
+        return NoTranslError;
     }
 
     if (isalpha(*str) != 0)
     {
-        if ((commands_buf[count]).type_of_arg != CharArg)
-        {
-            printf("Ошибка в типе аргумента команды\n"); // "test.asm:12: Ошибка в типе CharArg аргумента 234 команды PushReg\n"
+        if (ReadCharArg(str, arg, count) != NoTranslError)
             return TranslError;
-        }
-        sscanf(str, "%c", &arg_c);
-        *arg = (int)arg_c;
         return NoTranslError;
     }
     else
     {
-        if ((commands_buf[count]).type_of_arg != IntArg)
-        {
-            printf("Ошибка в типе аргумента команды\n");
+        if (ReadIntArg(str, arg, count) != NoTranslError)
             return TranslError;
-        }
-        sscanf(str, "%d", &arg_d);
-        *arg = arg_d;
         return NoTranslError;
     }
-
-    return NoTranslError;
 }
 
 
@@ -256,9 +333,8 @@ TranslErr_t TranslateCommands (int ** code, int * pos, char ** textcode, int num
     assert(pos);
     assert(textcode);
     assert(labels);
-    // структура для аргументов!
 
-   for (int textcode_pos = 0; textcode_pos < num_of_lines; textcode_pos++)
+    for (int textcode_pos = 0; textcode_pos < num_of_lines; textcode_pos++)
     {
         char cmdStr[SIZE_OF_CMD_STR] = "";
         sscanf((textcode)[textcode_pos], "%s", cmdStr);

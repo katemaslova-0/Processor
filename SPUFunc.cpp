@@ -448,7 +448,7 @@ static ProcErr_t JmpFunc (SPU_t * proc, int jmp)
         case JAE: { if (x <= y) {proc->cmd_count = next;  return NoProcError;} } break;
         case JE:  { if (x == y) {proc->cmd_count = next;  return NoProcError;} } break;
         case JNE: { if (x != y) {proc->cmd_count = next;  return NoProcError;} } break;
-        default:  {printf("Invalid cmd at JmpFunc\n");   return ProcError;   }
+        default:  { printf("Invalid cmd at JmpFunc\n");   return ProcError;    }
     }
 
     proc->cmd_count++;
